@@ -73,49 +73,6 @@ def conductor_dashboard():
         return redirect(url_for('home'))
     return render_template('conductor_dashboard.html')
 
-@app.route('/conductor/create_quiz', methods=['GET', 'POST'])
-def create_quiz():
-    if 'username' not in session or session['role'] != 'conductor':
-        return redirect(url_for('home'))
-
-    if request.method == 'POST':
-        quiz_name = request.form['quiz_name']
-        total_questions = int(request.form['total_questions'])
-        return redirect(url_for('add_questions', quiz_name=quiz_name, total_questions=total_questions))
-
-    return render_template('create_quiz.html')
-
-@app.route('/conductor/add_questions/<quiz_name>/<int:total_questions>', methods=['GET', 'POST'])
-def add_questions(quiz_name, total_questions):
-    if 'username' not in session or session['role'] != 'conductor':
-        return redirect(url_for('home'))
-
-    if request.method == 'POST':
-        questions = []
-        for i in range(1, total_questions + 1):
-            question = request.form[f'question_{i}']
-            options = [
-                request.form[f'option1_{i}'],
-                request.form[f'option2_{i}'],
-                request.form[f'option3_{i}'],
-                request.form[f'option4_{i}']
-            ]
-            correct_option = int(request.form[f'correct_option_{i}'])
-            time_limit = int(request.form.get(f'time_limit_{i}', 30))
-
-            questions.append({
-                'question': question,
-                'options': options,
-                'correct_option': correct_option,
-                'time_limit': time_limit
-            })
-
-        quizzes_col.insert_one({'conductor': session['username'], 'quiz_name': quiz_name, 'questions': questions})
-        flash('Quiz created successfully!')
-        return redirect(url_for('conductor_dashboard'))
-
-    return render_template('add_questions.html', quiz_name=quiz_name, total_questions=total_questions)
-
 @app.route('/conductor/upload_csv', methods=['GET', 'POST'])
 def upload_csv():
     if 'username' not in session or session['role'] != 'conductor':
@@ -123,11 +80,17 @@ def upload_csv():
 
     if request.method == 'POST':
         file = request.files['file']
+        quiz_code = request.form['quiz_code']
         num_questions = int(request.form['num_questions'])
         total_time = int(request.form['total_time'])
 
         if not file:
             flash('No file uploaded!')
+            return redirect(url_for('conductor_dashboard'))
+
+        existing_quiz = quizzes_col.find_one({'quiz_code': quiz_code})
+        if existing_quiz:
+            flash('Quiz code already exists! Please use a different code.')
             return redirect(url_for('conductor_dashboard'))
 
         df = pd.read_csv(file)
@@ -142,6 +105,7 @@ def upload_csv():
         quizzes_col.insert_one({
             'conductor': session['username'],
             'quiz_name': file.filename.split('.')[0],
+            'quiz_code': quiz_code,
             'questions': selected_questions,
             'total_time': total_time
         })
@@ -155,9 +119,21 @@ def upload_csv():
 def student_dashboard():
     if 'username' not in session or session['role'] != 'student':
         return redirect(url_for('home'))
+    return render_template('student_dashboard.html')
 
-    quizzes = list(quizzes_col.find())
-    return render_template('student_dashboard.html', quizzes=quizzes)
+@app.route('/student/join_quiz', methods=['POST'])
+def student_join_quiz():
+    if 'username' not in session or session['role'] != 'student':
+        return redirect(url_for('home'))
+
+    quiz_code = request.form['quiz_code'].strip()
+    quiz = quizzes_col.find_one({'quiz_code': quiz_code})
+
+    if not quiz:
+        flash('Invalid Quiz Code! Please try again.')
+        return redirect(url_for('student_dashboard'))
+
+    return redirect(url_for('attempt_quiz', quiz_id=quiz['_id']))
 
 @app.route('/quiz/<quiz_id>', methods=['GET', 'POST'])
 def attempt_quiz(quiz_id):
