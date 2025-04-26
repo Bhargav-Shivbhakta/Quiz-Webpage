@@ -1,12 +1,14 @@
 {% extends 'base.html' %}
 {% block content %}
-<h2>Available Quizzes</h2>
-<ul class="list-group">
-    {% for quiz in quizzes %}
-    <li class="list-group-item d-flex justify-content-between align-items-center">
-        {{ quiz.quiz_name }}
-        <a href="{{ url_for('attempt_quiz', quiz_id=quiz._id) }}" class="btn btn-primary btn-sm">Attempt</a>
-    </li>
-    {% endfor %}
-</ul>
+
+<h2>Student Dashboard</h2>
+
+<form action="{{ url_for('student_join_quiz') }}" method="POST">
+    <div class="mb-3">
+        <label class="form-label">Enter Quiz Code</label>
+        <input type="text" name="quiz_code" class="form-control" required>
+    </div>
+    <button type="submit" class="btn btn-primary">Join Quiz</button>
+</form>
+
 {% endblock %}
