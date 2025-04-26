@@ -1,3 +1,8 @@
+{% extends 'base.html' %}
+{% block content %}
+
+<h2>Conductor Dashboard</h2>
+
 <h4>Upload Quiz from CSV</h4>
 <form action="{{ url_for('upload_csv') }}" method="POST" enctype="multipart/form-data">
     <div class="mb-3">
@@ -18,3 +23,5 @@
     </div>
     <button type="submit" class="btn btn-success">Upload and Create Quiz</button>
 </form>
+
+{% endblock %}
