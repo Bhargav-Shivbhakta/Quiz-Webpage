@@ -9,7 +9,7 @@ app = Flask(__name__)
 app.secret_key = os.urandom(24)
 
 # MongoDB Atlas connection
-client = MongoClient("mongodb+srv://aarya:aarya123@cluster0.n4p9pyd.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0")
+client = MongoClient("mongodb+srv://aarya:aarya123@cluster0.n4p9pyd.mongodb.net/mindmaze_db?retryWrites=true&w=majority&appName=Cluster0")
 db = client['mindmaze_db']
 
 # Collections
@@ -78,9 +78,18 @@ def create_quiz():
 
     if request.method == 'POST':
         quiz_name = request.form['quiz_name']
-        questions = []
-
         total_questions = int(request.form['total_questions'])
+        return redirect(url_for('add_questions', quiz_name=quiz_name, total_questions=total_questions))
+
+    return render_template('create_quiz.html')
+
+@app.route('/conductor/add_questions/<quiz_name>/<int:total_questions>', methods=['GET', 'POST'])
+def add_questions(quiz_name, total_questions):
+    if 'username' not in session or session['role'] != 'conductor':
+        return redirect(url_for('home'))
+
+    if request.method == 'POST':
+        questions = []
         for i in range(1, total_questions + 1):
             question = request.form[f'question_{i}']
             options = [
@@ -90,13 +99,20 @@ def create_quiz():
                 request.form[f'option4_{i}']
             ]
             correct_option = int(request.form[f'correct_option_{i}'])
-            questions.append({'question': question, 'options': options, 'correct_option': correct_option})
+            time_limit = int(request.form.get(f'time_limit_{i}', 30))
+
+            questions.append({
+                'question': question,
+                'options': options,
+                'correct_option': correct_option,
+                'time_limit': time_limit
+            })
 
         quizzes_col.insert_one({'conductor': session['username'], 'quiz_name': quiz_name, 'questions': questions})
         flash('Quiz created successfully!')
         return redirect(url_for('conductor_dashboard'))
 
-    return render_template('create_quiz.html')
+    return render_template('add_questions.html', quiz_name=quiz_name, total_questions=total_questions)
 
 @app.route('/student/dashboard')
 def student_dashboard():
@@ -112,6 +128,7 @@ def attempt_quiz(quiz_id):
         return redirect(url_for('home'))
 
     quiz = quizzes_col.find_one({'_id': ObjectId(quiz_id)})
+
     if request.method == 'POST':
         answers = []
         correct_count = 0
