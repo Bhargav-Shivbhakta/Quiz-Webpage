@@ -3,68 +3,43 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4">
     <h2>{{ quiz.quiz_name }}</h2>
-    <h5>⏳ Time Left: <span id="timer">Loading...</span> sec</h5>
+    <h5>⏳ Time Left: <span id="timer">Loading...</span></h5>
 </div>
 
 <form id="quiz-form" method="POST">
-    <div id="question-area">
-        <!-- Questions will be injected dynamically -->
-    </div>
-    <div class="mt-4 d-flex justify-content-between">
-        <button type="button" class="btn btn-primary" id="next-btn" onclick="nextQuestion()">Next</button>
-        <button type="submit" class="btn btn-success d-none" id="submit-btn">Submit Quiz</button>
-    </div>
+    {% for q in quiz.questions %}
+        <div class="mb-4">
+            <h5>{{ loop.index }}. {{ q.question }}</h5>
+            {% for option in [q.option1, q.option2, q.option3, q.option4] %}
+                <div class="form-check">
+                    <input class="form-check-input" type="radio" name="question_{{ loop.index0 }}" value="{{ loop.index0 }}">
+                    <label class="form-check-label">{{ option }}</label>
+                </div>
+            {% endfor %}
+        </div>
+    {% endfor %}
+    <button type="submit" class="btn btn-success">Submit Quiz</button>
 </form>
 
 <script>
-// Quiz data passed from Flask to JS
-const quizData = {{ quiz.questions|tojson }};
-let currentQuestion = 0;
-let timer;
-let timeLeft;
+let totalTime = {{ quiz.total_time }} * 60;  // Convert minutes to seconds
+let timerDisplay = document.getElementById('timer');
 
-// Render first question
-renderQuestion();
-
-// Function to render a question
-function renderQuestion() {
-    clearInterval(timer);
-    const q = quizData[currentQuestion];
-    timeLeft = q.time_limit || 30;  // Default 30s if not specified
-
-    const html = `
-        <h4>${currentQuestion + 1}. ${q.question}</h4>
-        ${q.options.map((opt, idx) => `
-            <div class="form-check">
-                <input class="form-check-input" type="radio" name="question_${currentQuestion}" value="${idx}">
-                <label class="form-check-label">${opt}</label>
-            </div>
-        `).join('')}
-    `;
-    document.getElementById('question-area').innerHTML = html;
-    document.getElementById('timer').innerText = timeLeft;
-
-    timer = setInterval(() => {
-        timeLeft--;
-        document.getElementById('timer').innerText = timeLeft;
-        if (timeLeft <= 0) {
-            nextQuestion(); // Auto-move to next if time ends
-        }
-    }, 1000);
-}
-
-// Function to move to next question
-function nextQuestion() {
-    clearInterval(timer);
-    currentQuestion++;
-    if (currentQuestion >= quizData.length) {
-        document.getElementById('next-btn').classList.add('d-none');
-        document.getElementById('submit-btn').classList.remove('d-none');
-        document.getElementById('timer').innerText = "Completed";
+function updateTimer() {
+    let minutes = Math.floor(totalTime / 60);
+    let seconds = totalTime % 60;
+    timerDisplay.innerText = `${minutes}:${seconds < 10 ? '0' + seconds : seconds}`;
+    
+    if (totalTime <= 0) {
+        clearInterval(timerInterval);
+        document.getElementById('quiz-form').submit();  // Auto-submit form when time ends
     } else {
-        renderQuestion();
+        totalTime--;
     }
 }
+
+let timerInterval = setInterval(updateTimer, 1000);
+updateTimer();
 </script>
 
 {% endblock %}
