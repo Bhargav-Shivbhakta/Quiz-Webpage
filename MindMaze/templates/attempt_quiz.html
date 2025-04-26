@@ -9,10 +9,10 @@
 <form id="quiz-form" method="POST">
     {% for q in quiz.questions %}
         <div class="mb-4">
-            <h5>{{ loop.index }}. {{ q.question }}</h5>
-            {% for option in [q.option1, q.option2, q.option3, q.option4] %}
+            <h5><strong>Q{{ loop.index }}.</strong> {{ q.question }}</h5>  <!-- Question Number added here -->
+            {% for idx, option in enumerate([q['option1'], q['option2'], q['option3'], q['option4']]) %}
                 <div class="form-check">
-                    <input class="form-check-input" type="radio" name="question_{{ loop.index0 }}" value="{{ loop.index0 }}">
+                    <input class="form-check-input" type="radio" name="question_{{ loop.index0 }}" value="{{ idx }}">
                     <label class="form-check-label">{{ option }}</label>
                 </div>
             {% endfor %}
@@ -29,10 +29,10 @@ function updateTimer() {
     let minutes = Math.floor(totalTime / 60);
     let seconds = totalTime % 60;
     timerDisplay.innerText = `${minutes}:${seconds < 10 ? '0' + seconds : seconds}`;
-    
+
     if (totalTime <= 0) {
         clearInterval(timerInterval);
-        document.getElementById('quiz-form').submit();  // Auto-submit form when time ends
+        document.getElementById('quiz-form').submit();  // Auto-submit when time ends
     } else {
         totalTime--;
     }
