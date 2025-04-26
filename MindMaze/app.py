@@ -163,6 +163,29 @@ def attempt_quiz(quiz_id):
         return redirect(url_for('view_result', quiz_id=quiz_id))
 
     return render_template('attempt_quiz.html', quiz=quiz)
+@app.route('/conductor/results', methods=['GET', 'POST'])
+def conductor_results():
+    if 'username' not in session or session['role'] != 'conductor':
+        return redirect(url_for('home'))
+
+    if request.method == 'POST':
+        quiz_code = request.form['quiz_code'].strip()
+        quiz = quizzes_col.find_one({'quiz_code': quiz_code})
+
+        if not quiz:
+            flash('Quiz code not found! Please check again.')
+            return redirect(url_for('conductor_results'))
+
+        quiz_id = str(quiz['_id'])
+        results = list(results_col.find({'quiz_id': quiz_id}))
+
+        # Sort by score descending
+        sorted_results = sorted(results, key=lambda x: x['score'], reverse=True)
+
+        return render_template('view_results.html', results=sorted_results, quiz_code=quiz_code)
+
+    return render_template('search_quiz_code.html')
+
 
 @app.route('/result/<quiz_id>')
 def view_result(quiz_id):
