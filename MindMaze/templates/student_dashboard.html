@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Available Quizzes</h2>
+<ul class="list-group">
+    {% for quiz in quizzes %}
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+        {{ quiz.quiz_name }}
+        <a href="{{ url_for('attempt_quiz', quiz_id=quiz._id) }}" class="btn btn-primary btn-sm">Attempt</a>
+    </li>
+    {% endfor %}
+</ul>
+{% endblock %}
