@@ -1,5 +1,27 @@
 {% extends 'base.html' %}
 {% block content %}
+
 <h2>Conductor Dashboard</h2>
-<a href="{{ url_for('create_quiz') }}" class="btn btn-primary">Create New Quiz</a>
+
+<!-- Create Quiz Manually (optional) -->
+<a href="{{ url_for('create_quiz') }}" class="btn btn-primary mb-4">Create Quiz Manually</a>
+
+<!-- Upload Quiz via CSV -->
+<h4>Upload Quiz from CSV</h4>
+<form action="{{ url_for('upload_csv') }}" method="POST" enctype="multipart/form-data">
+    <div class="mb-3">
+        <label class="form-label">Upload CSV File</label>
+        <input type="file" name="file" class="form-control" accept=".csv" required>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Number of Questions to Select</label>
+        <input type="number" name="num_questions" class="form-control" min="1" required>
+    </div>
+    <div class="mb-3">
+        <label class="form-label">Total Quiz Time (in minutes)</label>
+        <input type="number" name="total_time" class="form-control" min="1" required>
+    </div>
+    <button type="submit" class="btn btn-success">Upload and Create Quiz</button>
+</form>
+
 {% endblock %}
