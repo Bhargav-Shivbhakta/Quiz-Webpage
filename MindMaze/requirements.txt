@@ -1,4 +1,4 @@
-pip install pandas
+pandas
 Flask
 pymongo
 dnspython
