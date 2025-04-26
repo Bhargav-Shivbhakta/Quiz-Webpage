@@ -2,6 +2,8 @@ from flask import Flask, render_template, request, redirect, url_for, session, f
 from pymongo import MongoClient
 from werkzeug.security import generate_password_hash, check_password_hash
 from bson import ObjectId
+import pandas as pd
+import random
 import os
 
 # Initialize Flask app
@@ -113,6 +115,41 @@ def add_questions(quiz_name, total_questions):
         return redirect(url_for('conductor_dashboard'))
 
     return render_template('add_questions.html', quiz_name=quiz_name, total_questions=total_questions)
+
+@app.route('/conductor/upload_csv', methods=['GET', 'POST'])
+def upload_csv():
+    if 'username' not in session or session['role'] != 'conductor':
+        return redirect(url_for('home'))
+
+    if request.method == 'POST':
+        file = request.files['file']
+        num_questions = int(request.form['num_questions'])
+        total_time = int(request.form['total_time'])
+
+        if not file:
+            flash('No file uploaded!')
+            return redirect(url_for('conductor_dashboard'))
+
+        df = pd.read_csv(file)
+        all_questions = df.to_dict('records')
+
+        if num_questions > len(all_questions):
+            flash('Number of questions requested exceeds available questions!')
+            return redirect(url_for('conductor_dashboard'))
+
+        selected_questions = random.sample(all_questions, num_questions)
+
+        quizzes_col.insert_one({
+            'conductor': session['username'],
+            'quiz_name': file.filename.split('.')[0],
+            'questions': selected_questions,
+            'total_time': total_time
+        })
+
+        flash('Quiz created successfully from CSV!')
+        return redirect(url_for('conductor_dashboard'))
+
+    return redirect(url_for('conductor_dashboard'))
 
 @app.route('/student/dashboard')
 def student_dashboard():
