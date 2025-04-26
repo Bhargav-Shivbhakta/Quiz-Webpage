@@ -197,3 +197,26 @@ def view_result(quiz_id):
 
 if __name__ == '__main__':
     app.run(debug=True)
+@app.route('/conductor/delete_quiz', methods=['GET', 'POST'])
+def delete_quiz():
+    if 'username' not in session or session['role'] != 'conductor':
+        return redirect(url_for('home'))
+
+    if request.method == 'POST':
+        quiz_code = request.form['quiz_code'].strip()
+        quiz = quizzes_col.find_one({'quiz_code': quiz_code})
+
+        if not quiz:
+            flash('Quiz not found! Please check the code.')
+            return redirect(url_for('delete_quiz'))
+
+        # Delete Quiz
+        quizzes_col.delete_one({'quiz_code': quiz_code})
+
+        # Delete Results
+        results_col.delete_many({'quiz_id': str(quiz['_id'])})
+
+        flash(f'Quiz "{quiz_code}" and all related records deleted successfully.')
+        return redirect(url_for('conductor_dashboard'))
+
+    return render_template('delete_quiz.html')
